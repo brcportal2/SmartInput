@@ -151,9 +151,9 @@ function SmartInput(config){
             .filter(function(handlerData){
                 var hotkey = handlerData.hotkey;
                 if (!hotkey) return false;
-                if (hotkey.ctrl != null && Boolean(event.ctrlKey) !== Boolean(handlerData.ctrl)) return false;
-                if (hotkey.alt != null && Boolean(event.altKey) !== Boolean(handlerData.alt)) return false;
-                if (hotkey.shift != null && Boolean(event.shiftKey) !== Boolean(handlerData.shift)) return false;
+                if (hotkey.ctrl != null && Boolean(event.ctrlKey) !== Boolean(hotkey.ctrl)) return false;
+                if (hotkey.alt != null && Boolean(event.altKey) !== Boolean(hotkey.alt)) return false;
+                if (hotkey.shift != null && Boolean(event.shiftKey) !== Boolean(hotkey.shift)) return false;
                 return true;
             })
             .forEach(function(handlerData){
@@ -401,7 +401,7 @@ SmartInput.prototype.offHotkey = function offHotkey(hotkey, handler){
         var handlerData = handlerList[i];
         var handlerHotkey = handlerData.hotkey;
         if (isSameHotkey(hotkey, handlerHotkey)) {
-            handlerHotkey.splice(i, 1);
+            handlerList.splice(i, 1);
         } else {
             i++;
         }
