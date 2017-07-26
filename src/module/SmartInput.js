@@ -55,6 +55,7 @@ function SmartInput(config){
         if (smartInput.disabled) return;
         var data = event.clipboardData || window.clipboardData;
         setTimeout(updateValue, 0);
+        setTimeout(removeStyles, 0);
         return onMediaEvent(event, data, true);
     }
 
@@ -63,6 +64,7 @@ function SmartInput(config){
         if (smartInput.disabled) return;
         var data = event.dataTransfer || window.dataTransfer;
         setTimeout(updateValue, 0);
+        setTimeout(removeStyles, 0);
         return onMediaEvent(event, data, false);
     }
 
@@ -121,6 +123,7 @@ function SmartInput(config){
 
     function onInput(){
         if (smartInput.disabled) return;
+        removeStyles();
         handleImages();
         updateValue();
         fixEmptySpaces();
@@ -158,6 +161,15 @@ function SmartInput(config){
             })
         ;
         return !needCancelEvent;
+    }
+
+    function removeStyles(){
+        var nodeList = element.querySelectorAll("*[style],*[class]");
+        if (!nodeList) return;
+        Array.prototype.slice.call(nodeList).forEach(function(element){
+            element.removeAttribute("style");
+            element.removeAttribute("class");
+        });
     }
 
     function handleImages(){
