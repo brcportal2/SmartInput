@@ -1,29 +1,46 @@
 var defaultDropClass = "smart-input-drop-target";
+var defaultDragClass = "smart-input-drag";
 
 /**
  *
- * @param {Object|Function} [config]
- * @param {Element} [config.element]
+ * @param {Object|Function} [options]
+ * @param {Element} [options.element]
  * @constructor
  */
-function SmartInput(config){
+function SmartInput(options){
     this.__eventHandlerMap = Object.create(null);
     this.__hotkeyHandlerDataMap = Object.create(null);
+    this.__allowDropFiles = true;
     var smartInput = this;
-    if (!config) config = {};
-    if (typeof config === "function") {
+    if (!options) options = {};
+    if (typeof options === "function") {
         var constructConfig = Object.create(null);
-        config = config.call(this, constructConfig);
-        if (!config) config = constructConfig;
+        options = options.call(this, constructConfig);
+        if (!options) options = constructConfig;
     }
 
-    var dropClass = config && config.dropClass || defaultDropClass;
+    var dropClass = options && options.dropClass || defaultDropClass;
+    var dragClass = options && options.dragClass || defaultDragClass;
+    if ("allowDropFiles" in options && !options.allowDropFiles) this.__allowDropFiles = false;
+    if ("disabled" in options) this.disabled = options.disabled;
 
-    var element = this.__element = config.element || (function(){
-        var div = document.createElement("div");
-        element.setAttribute("contenteditable", "true");
-        return div;
-    })();
+    var element;
+    if (typeof options.element === "string") {
+        try {
+            element = document.querySelector(options.element);
+        } catch (ignored) {}
+        if (!element) throw new Error("Wrong query selector: "+options.element);
+    } else if (typeof options.element === "object") {
+        element = options.element[0] || options.element;
+    } else {
+        (function(){
+            var div = document.createElement("div");
+            element.setAttribute("contenteditable", "true");
+            return div;
+        })()
+    }
+
+    this.__element = element;
 
     updateValue();
 
@@ -60,32 +77,37 @@ function SmartInput(config){
     }
 
     function onDrop(event){
-        element.classList.remove(config.dropClass || defaultDropClass);
+        element.classList.remove(dragClass);
+        element.classList.remove(dropClass);
         if (smartInput.disabled) return;
         var data = event.dataTransfer || window.dataTransfer;
         setTimeout(updateValue, 0);
         setTimeout(removeStyles, 0);
+        if (!smartInput.__allowDropFiles) return;
         return onMediaEvent(event, data, false);
     }
 
     function onDragover(event){
         if (smartInput.disabled) return false;
+        if (!smartInput.__allowDropFiles) return true;
         var data = event.dataTransfer || window.dataTransfer;
-        var imageFiles = cbDataGetFiles(data);
-        if (!imageFiles) cancelEvent(event);
+        if (cbDataHasFiles(data)) cancelEvent(event);
     }
 
     function onDragenter(event){
         if (smartInput.disabled) return false;
+        element.classList.add(dragClass);
+        if (!smartInput.__allowDropFiles) return true;
         var data = event.dataTransfer;
-        var types = data && data.types && Array.prototype.slice.call(data.types);
-        if (types && ~types.indexOf("Files")) {
+        if (cbDataHasFiles(data)) {
+
             element.classList.add(dropClass);
         }
     }
 
     function onDragleave(event){
         if (event.target !== element) return;
+        element.classList.remove(dragClass);
         element.classList.remove(dropClass);
     }
 
@@ -107,10 +129,11 @@ function SmartInput(config){
 
         if (types.length===1 && types[0] === "text/html") return true; // FF paste image as data-url
 
-        return filterText();
+        if (editorAction) return filterText();
+        return true;
 
         function filterText(){
-            if (editorAction) try {
+             try {
                 var textData = data.getData("text/plain");
                 if (textData) {
                     document.execCommand("insertText", false, textData);
@@ -148,6 +171,7 @@ function SmartInput(config){
                 if (hotkey.ctrl != null && Boolean(event.ctrlKey) !== Boolean(hotkey.ctrl)) return false;
                 if (hotkey.alt != null && Boolean(event.altKey) !== Boolean(hotkey.alt)) return false;
                 if (hotkey.shift != null && Boolean(event.shiftKey) !== Boolean(hotkey.shift)) return false;
+                if (hotkey.meta != null && Boolean(event.metaKey) !== Boolean(hotkey.meta)) return false;
                 return true;
             })
             .forEach(function(handlerData){
@@ -174,7 +198,7 @@ function SmartInput(config){
 
     function handleImages(){
         var images = Array.prototype.slice.call(element.querySelectorAll('img'));
-        var filterImage = config && config.filterImage;
+        var filterImage = options && options.filterImage;
         if (typeof filterImage === "function") images = images.filter(function(image){
             try {
                 return ! filterImage(image)
@@ -182,6 +206,7 @@ function SmartInput(config){
                 return true;
             }
         });
+
         images.forEach(function(image){
             var src = image.getAttribute("src");
             if (src.indexOf("data:") === 0) {
@@ -190,7 +215,11 @@ function SmartInput(config){
             }
             var parentElement = image.parentElement;
             if (parentElement) parentElement.removeChild(image);
-        })
+        });
+        Array.prototype.slice.call(element.querySelectorAll('svg,canvas')).forEach(function(image){
+            var parentElement = image.parentElement;
+            if (parentElement) parentElement.removeChild(image);
+        });
     }
 
     function updateValue(){
@@ -280,6 +309,15 @@ Object.defineProperties(SmartInput.prototype, {
             if (value) this.__element.removeAttribute("contenteditable");
             else this.__element.setAttribute("contenteditable", "true");
         }
+    },
+
+    allowDropFiles: {
+        get: function(){
+            return this.__allowDropFiles;
+        },
+        set: function (value) {
+            this.__allowDropFiles = Boolean(value);
+        }
     }
 });
 
@@ -355,6 +393,7 @@ SmartInput.prototype.emit = function emit(eventName){
  * @param {boolean?} hotkeyConfig.ctrl
  * @param {boolean?} hotkeyConfig.shift
  * @param {boolean?} hotkeyConfig.alt
+ * @param {boolean?} hotkeyConfig.meta
  * @param {Function} handler
  * @returns {SmartInput}
  */
@@ -363,7 +402,8 @@ SmartInput.prototype.onHotkey = function onHotkey(hotkeyConfig, handler){
         key: hotkeyConfig.key,
         shift: hotkeyConfig.shift != null ? Boolean(hotkeyConfig.shift) : null,
         ctrl: hotkeyConfig.ctrl != null ? Boolean(hotkeyConfig.ctrl) : null,
-        alt: hotkeyConfig.alt != null ? Boolean(hotkeyConfig.alt) : null
+        alt: hotkeyConfig.alt != null ? Boolean(hotkeyConfig.alt) : null,
+        meta: hotkeyConfig.meta != null ? Boolean(hotkeyConfig.meta) : null
     };
     var map = this.__hotkeyHandlerDataMap;
     var handlerList = map[Number(hotkey.key)] = map[Number(hotkey.key)] || [];
@@ -379,6 +419,7 @@ function isSameHotkey(hotkey1, hotkey2){
     if (Boolean(hotkey1.ctrl) !== Boolean(hotkey2.ctrl)) return false;
     if (Boolean(hotkey1.alt) !== Boolean(hotkey2.alt)) return false;
     if (Boolean(hotkey1.shift) !== Boolean(hotkey2.shift)) return false;
+    if (Boolean(hotkey1.meta) !== Boolean(hotkey2.meta)) return false;
     return true;
 }
 
@@ -412,24 +453,30 @@ SmartInput.prototype.offHotkey = function offHotkey(hotkey, handler){
     return this;
 };
 
-
-function cbDataIsPublic(clipboardData){
-    if (!clipboardData.types) return false;
-    for (var i=0; i<clipboardData.types.length; i++) {
-        if (clipboardData.types[i].indexOf('public') === 0) return true;
+function cbDataHasFiles(data){
+    var types = data.types && Array.prototype.slice.call(data.types);
+    if (types && ~types.indexOf("Files")) return true;
+    if (data.files && data.files.length) return true;
+    if (data.items) {
+        for (var i=0; i<data.items.length; i++){
+            if (data.items[i].type === "file") return true;
+        }
     }
     return false;
 }
 
-function cbDataGetFiles(clipboardData){
-    if (clipboardData.files && clipboardData.files.length) {
-        return Array.prototype.slice.call(clipboardData.files);
-    } else if (clipboardData.items && clipboardData.items.length) {
-        var items = Array.prototype.slice.call(clipboardData.items || []);
-        return items.map(function(i){return i.getAsFile()});
-    } else {
-        return null;
+function cbDataGetFiles(data){
+    if (data.files && data.files.length) {
+        return Array.prototype.slice.call(data.files);
+    } else if (data.items && data.items.length) {
+        var items = Array.prototype.slice.call(data.items || []);
+        var files = items && items
+            .map(function(i){return i.getAsFile()})
+            .filter(function(f){return f})
+        ;
+        if (files && files.length) return files;
     }
+    return null;
 }
 
 
