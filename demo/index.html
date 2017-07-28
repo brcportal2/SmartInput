@@ -68,6 +68,8 @@
         .editor[placeholder].smart-input-drop-target:empty:before {
             display: none;
         }
+
+        /** Убрать placeholder при фокусе в браузерах IE 10-11  */
         @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
             .editor[placeholder]:focus:empty:before {
                 display: none;
@@ -76,7 +78,19 @@
                 display: none;
             }
         }
+
+        /** Убрать placeholder при фокусе в браузерах Edge  */
         @supports (-ms-ime-align:auto) {
+            .editor[placeholder]:focus:empty:before {
+                display: none;
+            }
+            .editor[placeholder].smart-input-drag:empty:before {
+                display: none;
+            }
+        }
+
+        /** Убрать placeholder при фокусе в браузерах FF  */
+        @-moz-document url-prefix() {
             .editor[placeholder]:focus:empty:before {
                 display: none;
             }
