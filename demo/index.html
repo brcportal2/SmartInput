@@ -15,7 +15,7 @@
         }
         .messagebox {
             border: 1px solid #bbb;
-            height: 400px;
+            height: 140px;
             overflow-x: hidden;
             overflow-y: auto;
             text-align: left;
@@ -52,6 +52,7 @@
             overflow: auto;
             display: block;
             padding: 5px;
+            /*white-space: pre-wrap;*/
         }
         .editor[contenteditable] {
             border: 1px solid #aaa;
@@ -128,7 +129,7 @@
                 }
             });
 
-            editor.onHotkey({key:13, ctrl:false, shift:false}, function(event){
+            function onHotkeySend(event){
                 event.preventDefault();
                 var text = this.value;
                 if (!text) return;
@@ -145,7 +146,8 @@
                 messageBox.appendChild(messageDiv);
                 messageBox.scrollTop = messageBox.scrollHeight;
                 this.value = "";
-            });
+            }
+            //editor.onHotkey({key:13, ctrl:false, shift:false, alt:false, meta:false}, onHotkeySend);
 
             editor.on("inputFile", function(file){
                 var name = file.name||"Отправленный файл";
@@ -181,6 +183,16 @@
                 messageBox.scrollTop = messageBox.scrollHeight;
             });
 
+            function updateOut(){
+                document.getElementById("outText").value = editorElement.innerText;
+                document.getElementById("outHTML").value = editorElement.innerHTML;
+                document.getElementById("outValue").value = editor.value;
+                document.getElementById("outTextLines").childNodes[0].nodeValue = editorElement.innerText.split('\n').length;
+                document.getElementById("outHTMLLines").childNodes[0].nodeValue = editorElement.innerHTML.split('\n').length;
+                document.getElementById("outValueLines").childNodes[0].nodeValue = editor.value.split('\n').length;
+            }
+            editor.on("change", updateOut);
+
             document.getElementById("allowDrop").addEventListener("change", function(event) {
                 editor.allowDrop = event.target.checked;
             });
@@ -189,16 +201,60 @@
                 editor.disabled = event.target.checked;
             });
 
+            document.getElementById("updateOut").addEventListener("mousedown", function(event){
+                updateOut();
+                event.preventDefault();
+            });
+
+            updateOut();
+
+            function onHotkeyBR(event){
+                console.log("BR-start");
+                try {
+                    editor.insert("[break-line]\n", {deleteContents: true, selectEnd: true});
+                } catch (error) {
+                    console.error(error);
+                }
+
+                console.log("BR-done");
+                event.preventDefault();
+            }
+
+            var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+            editor.onHotkey({ctrl:true, alt: false, shift: false, meta:false, key:13}, onHotkeyBR);
+            if (isSafari) editor.onHotkey({ctrl:false, alt: false, shift: false, meta:true, key:13}, onHotkeyBR);
+            if (isSafari) editor.onHotkey({ctrl:false, alt: false, shift: true, meta:true, key:13}, onHotkeyBR);
+            if (isSafari) editor.onHotkey({ctrl:false, alt: false, shift: true, meta:false, key:13}, onHotkeyBR);
+
+
+            document.getElementById("logRange").addEventListener("mousedown", function(event) {
+                var sel = window.getSelection();
+                var range = sel.getRangeAt(0);
+                console.log("range", range);
+                console.log("range = ", range.startContainer.nodeName, range.startContainer.nodeValue, range.startOffset, range.endContainer.nodeName, range.endContainer.nodeValue, range.endOffset);
+                event.preventDefault();
+            });
+
+            editorElement.focus();
+
         });
+
     </script>
 </head>
 <body>
 
 <div class="container">
     <div class="messagebox" id="messagebox"></div>
-    <div class="editor" id="editor1" placeholder="Введите текст..." contenteditable="true"></div>
+    <div class="editor" id="editor1" placeholder="Введите текст..." contenteditable="true"><br></div>
+    <div class="editor" id="editor2" placeholder="пустой" contenteditable="true"></div>
     <label><input id="allowDrop" type="checkbox" checked> allowDrop</label>
     <label><input id="disabled" type="checkbox"> disabled</label>
+    <button id="logRange">logRange</button>
+    <button id="updateOut">updateOut</button>
+    <div>outText<textarea id="outText" cols="50" rows="7"></textarea> liles=<span id="outTextLines">_</span></div>
+    <div>outHTML<textarea id="outHTML" cols="50" rows="7"></textarea> liles=<span id="outHTMLLines">_</span></div>
+    <div>value<textarea id="outValue" cols="50" rows="7"></textarea> liles=<span id="outValueLines">_</span></div>
 </div>
 
 </body>

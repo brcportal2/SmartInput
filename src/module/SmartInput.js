@@ -42,8 +42,6 @@ function SmartInput(options){
 
     this.__element = element;
 
-    updateValue();
-
     element.addEventListener("paste", onPaste);
     element.addEventListener("keydown", onKeydown);
     element.addEventListener("keyup", onKeyup);
@@ -67,11 +65,14 @@ function SmartInput(options){
 
     // config.filterFileDrag;
 
+    function updateEditorValue(){
+        return smartInput.updateValue();
+    }
 
     function onPaste(event){
         if (smartInput.disabled) return;
         var data = event.clipboardData || window.clipboardData;
-        setTimeout(updateValue, 0);
+        setTimeout(updateEditorValue, 0);
         setTimeout(removeStyles, 0);
         return onMediaEvent(event, data, true);
     }
@@ -81,7 +82,7 @@ function SmartInput(options){
         element.classList.remove(dropClass);
         if (smartInput.disabled) return;
         var data = event.dataTransfer || window.dataTransfer;
-        setTimeout(updateValue, 0);
+        setTimeout(updateEditorValue, 0);
         setTimeout(removeStyles, 0);
         if (!smartInput.__allowDropFiles) return;
         return onMediaEvent(event, data, false);
@@ -148,18 +149,20 @@ function SmartInput(options){
         if (smartInput.disabled) return;
         removeStyles();
         handleImages();
-        updateValue();
-        fixEmptySpaces();
+        smartInput.updateValue();
+        fixSpaces();
     }
 
     function onKeyup(){
         if (smartInput.disabled) return;
         handleImages();
-        updateValue();
-        fixEmptySpaces();
+        smartInput.updateValue();
+        fixSpaces();
+        setTimeout(fixRangeOffset, 0);
     }
 
     function onKeydown(event){
+        fixRangeOffset();
         var map = smartInput.__hotkeyHandlerDataMap;
         var handlerDataList = map[event.keyCode];
         if (!handlerDataList || handlerDataList.length === 0) return;
@@ -222,32 +225,57 @@ function SmartInput(options){
         });
     }
 
-    function updateValue(){
-        var value = readRichElement(element);
-        if (smartInput.__value !== value) {
-            smartInput.__value = value;
-            smartInput.emit("change", value);
+    function fixSpaces(){
+        if (smartInput.__value) return fixSpacesExtraBr();
+        var blockElements = element.querySelectorAll("div,p");
+        if (blockElements.length > 0) return fixSpacesExtraBr();
+        var brElements = element.querySelectorAll("br");
+        if (brElements.length > 1) return fixSpacesExtraBr();
+        return fixSpacesRemoveNodes();
+    }
+
+    function fixSpacesExtraBr(){
+        addBrIfNeeded(element);
+        var divs = Array.prototype.slice.call(element.querySelectorAll("div"));
+        for(var i=0; i<divs.length; i++){
+            addBrIfNeeded(divs[i]);
         }
     }
 
-    function fixEmptySpaces(){
-        if (smartInput.__value) return;
+    function fixSpacesRemoveNodes(){
         var childNodes = Array.prototype.slice.call(element.childNodes);
-        for (var i=0; i<childNodes.length; i++){
-            var child = childNodes[i];
-            if (child.nodeType === Node.TEXT_NODE && !child.nodeValue) continue;
+        for (var j=0; j<childNodes.length; j++){
+            var child = childNodes[j];
             element.removeChild(child);
         }
-        if (childNodes.length === 0) element.appendChild(document.createTextNode(""));
     }
 
-    this.__updateText = function(){
+    function fixRangeOffset(){ // в IE неправильно выставляется range, он встает после крайнего <BR>
+        try { // условие плохого range: end находится в element, offset уходит на последний элемент
+            var selection = window.getSelection();
+            var range = selection.getRangeAt(0);
+            if (range.endContainer !== element) return;
+            var endOffset = range.endOffset;
+            if (endOffset == 0) return;
+            if (endOffset !== element.childNodes.length) return;
+            // исключение - когда текст выделили полностью
+            if (range.startContainer == element && range.startOffset == 0) return;
+            range.setEnd(range.endContainer, endOffset-1);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } catch (ignored){}
+    }
+
+    this.__setText = function(text){
         clearDomElement(this.__element);
-        textToDOMList(this.__value).forEach(function(div){
+        textToStrongDOMList(text).forEach(function(div){
             this.__element.appendChild(div);
         }, this);
-        fixEmptySpaces();
+        this.updateValue();
+        fixSpaces();
     };
+
+    this.updateValue();
 
 }
 
@@ -277,9 +305,7 @@ Object.defineProperties(SmartInput.prototype, {
         },
         set: function(text){
             if (!this.__element) return;
-            if (this.__value === text) return;
-            this.__value = text;
-            this.__updateText();
+            this.__setText(text);
         }
     },
 
@@ -330,6 +356,76 @@ SmartInput.prototype.destroy = function destroy(){
     if (!this.__element) return false;
     this.__element = null;
     return true;
+};
+
+/**
+ *
+ * @param text
+ * @param {Object} [options]
+ * @param {boolean} [options.deleteContents]
+ * @param {boolean} [options.selectStart]
+ * @param {boolean} [options.selectEnd]
+ * @returns {SmartInput}
+ */
+SmartInput.prototype.insert = function insert(text, options) {
+    if (!this.isInRange()) return this;
+    var elements = textToSoftDOMList(text);
+    if (!elements.length) return this;
+    if (arguments.length < 2) options = {};
+    try {
+        var lastElement = elements[elements.length-1];
+        var selection = window.getSelection();
+        var range = selection.getRangeAt(0);
+        if (options.deleteContents) range.deleteContents();
+        elements.reverse().forEach(function(node){
+            range.insertNode( node );
+        });
+        if (options.selectEnd) {
+            range.setEndAfter(lastElement);
+            if (!options.selectStart) range.setStartAfter(lastElement);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+        editor.updateValue();
+    } catch (ignored){}
+    return this;
+
+};
+
+SmartInput.prototype.isInRange = function isInRange() {
+    try {
+        var selection = window.getSelection();
+        var range = selection.getRangeAt(0);
+        if (!containsNodeUp(this.__element,range.startContainer)) return false;
+        if (!containsNodeUp(this.__element,range.endContainer)) return false;
+        return true;
+    } catch (ignored){
+        return false;
+    }
+};
+
+function containsNodeUp(parent, child) {
+    var node = child;
+    while (node != null) {
+        if (node == parent) {
+            return true;
+        }
+        node = node.parentNode;
+    }
+    return false;
+}
+
+/**
+ * @name SmartInput#updateValue
+ * @returns {SmartInput}
+ */
+SmartInput.prototype.updateValue = function updateValue(){
+    var value = readRichElement(this.__element);
+    if (this.__value !== value) {
+        this.__value = value;
+        this.emit("change", value);
+    }
+    return this;
 };
 
 /**
@@ -484,7 +580,7 @@ function cbDataGetFiles(data){
  * @param {string} text
  * @returns {Array<Element>}
  */
-function textToDOMList(text){
+function textToStrongDOMList(text){
     return text
         .split('\n')
         .map(function(line){
@@ -496,7 +592,27 @@ function textToDOMList(text){
                 div.appendChild(document.createElement('br'));
             }
             return div;
-        });
+        })
+    ;
+}
+
+/**
+ * @param {string} text
+ * @returns {Array<Element>}
+ */
+function textToSoftDOMList(text){
+    return text
+        .split('\n')
+        .map(function(line){
+            return line.replace(/^ /g,'\u00a0').replace(/ {2}/g,' \u00a0');
+        })
+        .reduce(function(resultArray, text){
+            resultArray.push(document.createElement("BR"));
+            if (text) resultArray.push(document.createTextNode(text));
+            return resultArray;
+        }, [])
+        .slice(1)
+    ;
 }
 
 /**
@@ -590,4 +706,16 @@ function dataURLtoBlob(dataUrl) {
         u8arr[n] = a.charCodeAt(n);
     }
     return new Blob([u8arr], {type:mime});
+}
+
+function addBrIfNeeded(element){
+    var childNodes = Array.prototype.slice.call(element.childNodes);
+    var lastChild = childNodes[childNodes.length - 1];
+    var isElement = lastChild.nodeType === Node.ELEMENT_NODE;
+    var isBR = isElement && lastChild.tagName === "BR";
+    var isDiv = isElement && lastChild.tagName === "DIV";
+    if (isBR || isDiv) return; // если <BR> уже есть - ничего делать не нужно
+    var brElement = document.createElement("BR");
+    brElement.setAttribute("type", "auto");
+    element.appendChild(brElement);
 }
