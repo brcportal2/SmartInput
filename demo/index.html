@@ -211,7 +211,7 @@
             function onHotkeyBR(event){
                 console.log("BR-start");
                 try {
-                    editor.insert("[break-line]\n", {deleteContents: true, selectEnd: true});
+                    editor.insert("[break-line]\n", {deleteContents: true, selectEnd: true, scrollIntoViewIfNeeded:true});
                 } catch (error) {
                     console.error(error);
                 }
