@@ -404,7 +404,6 @@ SmartInput.prototype.insert = function insert(text, options) {
 };
 
 function scrollElement(element){
-    console.log("SCROLL", element, typeof element.scrollIntoViewIfNeeded === "function");
     if (typeof element.scrollIntoViewIfNeeded === "function") {
         element.scrollIntoViewIfNeeded(true);
     } else {
