@@ -305,6 +305,7 @@ Object.defineProperties(SmartInput.prototype, {
         },
         set: function(text){
             if (!this.__element) return;
+            if (this.__value == text) return;
             this.__setText(text);
         }
     },
