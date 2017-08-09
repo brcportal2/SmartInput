@@ -50,6 +50,9 @@ function SmartInput(options){
     element.addEventListener("dragover", onDragover);
     element.addEventListener("dragenter", onDragenter);
     element.addEventListener("dragleave", onDragleave);
+    if (options.clearOnBlur !== false) {
+        element.addEventListener("blur", onBlur);
+    }
 
     this.__removeEventListeners = function(){
         element.removeEventListener("paste", onPaste);
@@ -59,7 +62,7 @@ function SmartInput(options){
         element.removeEventListener("drop", onDrop);
         element.removeEventListener("dragover", onDragover);
         element.removeEventListener("dragenter", onDragenter);
-        element.removeEventListener("dragleave", onDragleave);
+        element.removeEventListener("blur", onBlur);
         smartInput.__removeEventListeners = null;
     };
 
@@ -188,6 +191,16 @@ function SmartInput(options){
             })
         ;
         return !needCancelEvent;
+    }
+
+    function onBlur(){
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        var range = document.createRange();
+        range.setStart(document.body, 0);
+        range.setEnd(document.body, document.body.childNodes.length);
+        selection.addRange(range);
+        selection.removeAllRanges();
     }
 
     function removeStyles(){
