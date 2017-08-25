@@ -281,7 +281,7 @@ function SmartInput(options){
 
     this.__setText = function(text){
         clearDomElement(this.__element);
-        textToStrongDOMList(text).forEach(function(div){
+        textToSoftDOMList(text).forEach(function(div){
             this.__element.appendChild(div);
         }, this);
         this.updateValue();
@@ -596,27 +596,6 @@ function cbDataGetFiles(data){
         if (files && files.length) return files;
     }
     return null;
-}
-
-
-/**
- * @param {string} text
- * @returns {Array<Element>}
- */
-function textToStrongDOMList(text){
-    return text
-        .split('\n')
-        .map(function(line){
-            var div = document.createElement('div');
-            if (line) {
-                var spacedLine = line.replace(/^ /g,'\u00a0').replace(/ {2}/g,' \u00a0');
-                div.appendChild(document.createTextNode(spacedLine));
-            } else {
-                div.appendChild(document.createElement('br'));
-            }
-            return div;
-        })
-    ;
 }
 
 /**

@@ -206,6 +206,11 @@
                 event.preventDefault();
             });
 
+            document.getElementById("setValue").addEventListener("mousedown", function(event){
+                editor.value = document.getElementById("outValue").value;
+                event.preventDefault();
+            });
+
             updateOut();
 
             function onHotkeyBR(event){
@@ -252,6 +257,7 @@
     <label><input id="disabled" type="checkbox"> disabled</label>
     <button id="logRange">logRange</button>
     <button id="updateOut">updateOut</button>
+    <button id="setValue">setValue from outValue</button>
     <div>outText<textarea id="outText" cols="50" rows="7"></textarea> liles=<span id="outTextLines">_</span></div>
     <div>outHTML<textarea id="outHTML" cols="50" rows="7"></textarea> liles=<span id="outHTMLLines">_</span></div>
     <div>value<textarea id="outValue" cols="50" rows="7"></textarea> liles=<span id="outValueLines">_</span></div>
