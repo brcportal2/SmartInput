@@ -20,6 +20,7 @@ function SmartInput(options){
     this.__eventHandlerMap = Object.create(null);
     this.__hotkeyHandlerDataMap = Object.create(null);
     this.__allowDropFiles = true;
+    this.__clearOnBlur = false;
     var smartInput = this;
     if (!options) options = {};
     if (typeof options === "function") {
@@ -32,6 +33,7 @@ function SmartInput(options){
     var dragClass = options && options.dragClass || defaultDragClass;
     if ("allowDropFiles" in options && !options.allowDropFiles) this.__allowDropFiles = false;
     if ("disabled" in options) this.disabled = options.disabled;
+    if ("clearOnBlur" in options) this.__clearOnBlur = !!options.clearOnBlur;
 
     var element;
     if (typeof options.element === "string") {
@@ -203,6 +205,7 @@ function SmartInput(options){
     }
 
     function onBlur(){
+        if (!smartInput.__clearOnBlur) return;
         var selection = window.getSelection();
         selection.removeAllRanges();
         var range = document.createRange();
@@ -367,6 +370,15 @@ Object.defineProperties(SmartInput.prototype, {
         },
         set: function (value) {
             this.__allowDropFiles = Boolean(value);
+        }
+    },
+
+    clearOnBlur: {
+        get: function(){
+            return this.__clearOnBlur;
+        },
+        set: function(value){
+            this.__clearOnBlur = !!value;
         }
     }
 });

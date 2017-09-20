@@ -16,6 +16,7 @@ var smartInput = new SmartInput({
 по умолчанию все картинки удаляются из поля ввода. Если `filterImage(img:Element)` вернет `true`, картинка останется.
 * `[options.allowDropFiles]`:`boolean` - разрешить перетаскивание файлов. По умолчанию - true.
 * `[options.disabled]`:`boolean` - Отключить элемент. По умолчанию - зависит от наличия атрибута contenteditable
+* `[options.clearOnBlur]`:`boolean` - Очищать выделение текста при потере фокуса. Позволяет избежать бага в IE и Edge с отображением каретки.
 * `return`:`SmartInput`
 
 ## Методы
@@ -128,6 +129,9 @@ console.log( "Input element: ", smartInput.element );
 ```
 Задаёт элементу placeholder. Тип: `Element`\
 Доступен только для чтения.
+
+#### clearOnBlur
+Очищать ли выделение текста при потере фокуса. Тип: `boolean`
 
 ## События
 
