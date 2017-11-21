@@ -93,9 +93,9 @@ smartInput.onHotkey({key: 13, ctrl:false, alt:false, shift:true, meta:false}, ho
 
 #### SmartInput.insert(text, options)
 ```javascript
-smartInput.onHotkey({key: 13, ctrl:false, alt:false, shift:true, meta:false}, function(event){
-    console.log(this.value);
-    this.value = "";
+smartInput.insert("JS iS AwESoME",{
+    deleteContents: true,
+    selectEnd: true
 });
 ```
 Добавить текст в компонент.  
