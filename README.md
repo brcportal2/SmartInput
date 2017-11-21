@@ -91,6 +91,25 @@ smartInput.onHotkey({key: 13, ctrl:false, alt:false, shift:true, meta:false}, ho
                          отписка произойдет от всех событий по данной комбинации клавиш
 * `return`:`SmartInput`
 
+#### SmartInput.insert(text, options)
+```javascript
+smartInput.onHotkey({key: 13, ctrl:false, alt:false, shift:true, meta:false}, function(event){
+    console.log(this.value);
+    this.value = "";
+});
+```
+Добавить текст в компонент.  
+Текст будет добавлен в последнюю позицию, выделенную курсором.  
+Если такой нет - в конец.
+
+* `text`:`string` - текст
+* `[options]`:`Object`
+* `[options.deleteContents]`:`boolean` - заменить выделенный текст
+* `[options.selectStart]`:`boolean` - выделить начало вставленного текста
+* `[options.selectEnd]`:`boolean` - выделить конец вставленного текста
+* `[options.scrollIntoViewIfNeeded]`:`boolean` - автоматическая прокрутка
+* `return`:`SmartInput`
+
 #### SmartInput.destroy()
 ```javascript
 smartInput.destroy();

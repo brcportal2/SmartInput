@@ -211,6 +211,15 @@
                 event.preventDefault();
             });
 
+            document.getElementById("insert").addEventListener("click", function(event){
+                editor.insert(document.getElementById("outValue").value, {
+                    deleteContents: true,
+                    selectStart: true,
+                    selectEnd: true
+                });
+                event.preventDefault();
+            });
+
             updateOut();
 
             function onHotkeyBR(event){
@@ -251,13 +260,14 @@
 
 <div class="container">
     <div class="messagebox" id="messagebox"></div>
-    <div class="editor" id="editor1" placeholder="Введите текст..." contenteditable="true"><br></div>
+    <div class="editor" id="editor1" placeholder="Введите текст..." contenteditable="true">g<br>n</div>
     <div class="editor" id="editor2" placeholder="пустой" contenteditable="true"></div>
     <label><input id="allowDrop" type="checkbox" checked> allowDrop</label>
     <label><input id="disabled" type="checkbox"> disabled</label>
     <button id="logRange">logRange</button>
     <button id="updateOut">updateOut</button>
     <button id="setValue">setValue from outValue</button>
+    <button id="insert">insert out</button>
     <div>outText<textarea id="outText" cols="50" rows="7"></textarea> liles=<span id="outTextLines">_</span></div>
     <div>outHTML<textarea id="outHTML" cols="50" rows="7"></textarea> liles=<span id="outHTMLLines">_</span></div>
     <div>value<textarea id="outValue" cols="50" rows="7"></textarea> liles=<span id="outValueLines">_</span></div>

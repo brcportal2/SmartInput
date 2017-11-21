@@ -52,9 +52,7 @@ function SmartInput(options){
     element.addEventListener("dragover", onDragover);
     element.addEventListener("dragenter", onDragenter);
     element.addEventListener("dragleave", onDragleave);
-    if (options.clearOnBlur !== false) {
-        element.addEventListener("blur", onBlur);
-    }
+    element.addEventListener("blur", onBlur);
 
     this.__removeEventListeners = function(){
         element.removeEventListener("paste", onPaste);
@@ -196,7 +194,11 @@ function SmartInput(options){
     }
 
     function onBlur(){
-        if (!smartInput.__clearOnBlur) return;
+        if (smartInput.__clearOnBlur) clearOnBlur();
+        setLastRange();
+    }
+
+    function clearOnBlur(){
         var selection = window.getSelection();
         selection.removeAllRanges();
         var range = document.createRange();
@@ -204,6 +206,19 @@ function SmartInput(options){
         range.setEnd(document.body, document.body.childNodes.length);
         selection.addRange(range);
         selection.removeAllRanges();
+    }
+
+    function setLastRange(){
+        if (!smartInput.isInRange()) {
+            smartInput.__lastRange = null;
+        }
+        var selection = window.getSelection();
+        try {
+            smartInput.__lastRange = selection.getRangeAt(0);
+        } catch (ignored) {
+            smartInput.__lastRange = null;
+        }
+
     }
 
     function removeStyles(){
@@ -396,14 +411,29 @@ SmartInput.prototype.destroy = function destroy(){
  * @returns {SmartInput}
  */
 SmartInput.prototype.insert = function insert(text, options) {
-    if (!this.isInRange()) return this;
+    var range = null;
+    var selection = window.getSelection();
+    if (this.isInRange()) {
+        range = selection.getRangeAt(0);
+    } else if (this.__lastRange) {
+        range = this.__lastRange;
+    } else {
+        range = document.createRange();
+        var childNodes = Array.prototype.slice.call(this.__element.childNodes);
+        var valueNodeCount = childNodes.length;
+        var lastNode = childNodes[childNodes.length - 1];
+        if (lastNode &&lastNode.nodeType == Node.ELEMENT_NODE && lastNode.tagName == "BR") {
+            valueNodeCount -= 1;
+        }
+        range.setStart(this.__element, valueNodeCount);
+        range.setEnd(this.__element, valueNodeCount);
+    }
+    if (!range) return this;
     var elements = textToSoftDOMList(text);
     if (!elements.length) return this;
     if (!options) options = {};
     try {
         var lastElement = elements[elements.length-1];
-        var selection = window.getSelection();
-        var range = selection.getRangeAt(0);
         if (options.deleteContents) range.deleteContents();
         elements.reverse().forEach(function(node){
             range.insertNode( node );
