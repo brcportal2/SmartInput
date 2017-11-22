@@ -220,6 +220,11 @@
                 event.preventDefault();
             });
 
+            document.getElementById("focus").addEventListener("mousedown", function(event){
+                editor.focus();
+                event.preventDefault();
+            });
+
             updateOut();
 
             function onHotkeyBR(event){
@@ -268,6 +273,7 @@
     <button id="updateOut">updateOut</button>
     <button id="setValue">setValue from outValue</button>
     <button id="insert">insert out</button>
+    <button id="focus">focus</button>
     <div>outText<textarea id="outText" cols="50" rows="7"></textarea> liles=<span id="outTextLines">_</span></div>
     <div>outHTML<textarea id="outHTML" cols="50" rows="7"></textarea> liles=<span id="outHTMLLines">_</span></div>
     <div>value<textarea id="outValue" cols="50" rows="7"></textarea> liles=<span id="outValueLines">_</span></div>

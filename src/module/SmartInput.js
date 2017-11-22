@@ -215,8 +215,13 @@ function SmartInput(options){
         var selection = window.getSelection();
         try {
             smartInput.__lastRange = selection.getRangeAt(0);
+            smartInput.__lastRangeContainers = {
+                start: smartInput.__lastRange.startContainer,
+                end: smartInput.__lastRange.endContainer
+        };
         } catch (ignored) {
             smartInput.__lastRange = null;
+            smartInput.__lastRangeContainers = null;
         }
 
     }
@@ -457,6 +462,42 @@ function scrollElement(element){
         scrollIntoViewIfNeeded.call(element, true)
     }
 }
+
+/**
+ * @param {Object} [options]
+ * @param {boolean} [options.selectStart]
+ * @param {boolean} [options.selectEnd]
+ * @returns {SmartInput}
+ */
+SmartInput.prototype.focus = function focus(options) {
+    var selection = window.getSelection();
+    if (options && (options.selectStart || options.selectEnd)){
+        var range = document.createRange();
+        var childNodes = Array.prototype.slice.call(this.__element.childNodes);
+        var valueNodeCount = childNodes.length;
+        var lastNode = childNodes[childNodes.length - 1];
+        if (lastNode &&lastNode.nodeType == Node.ELEMENT_NODE && lastNode.tagName == "BR") {
+            valueNodeCount -= 1;
+        }
+        range.setStart(this.__element, options.selectStart ? 0 : valueNodeCount);
+        range.setEnd(this.__element, options.selectEnd ? valueNodeCount : 0);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        return this;
+    }
+    if (this.isInRange()) return this;
+    if (this.__lastRange && this.__lastRangeContainers) {
+        var rangeIsInvalid = false;
+        selection.removeAllRanges();
+        if (!containsNodeUp(this.__element,this.__lastRangeContainers.start)) rangeIsInvalid = true;
+        if (!containsNodeUp(this.__element,this.__lastRangeContainers.end)) rangeIsInvalid = true;
+        if (!rangeIsInvalid) {
+            selection.addRange(this.__lastRange);
+            return this;
+        }
+    }
+    return this.focus({selectEnd: true});
+};
 
 SmartInput.prototype.isInRange = function isInRange() {
     try {

@@ -110,6 +110,21 @@ smartInput.insert("JS iS AwESoME",{
 * `[options.scrollIntoViewIfNeeded]`:`boolean` - автоматическая прокрутка
 * `return`:`SmartInput`
 
+#### SmartInput.focus(options)
+```javascript
+smartInput.focus({
+    selectStart: true,
+    selectEnd: true
+});
+```
+Установить фокус в элемент.  
+Если вызвано без параметров - будет выделен последний выделенный текст
+Если такого текста нет или выделенный контент быз изменен - курсор встанет в конец
+
+* `[options]`:`Object`
+* `[options.selectStart]`:`boolean` - установить курсор в начало
+* `[options.selectEnd]`:`boolean` - установить курсор в конец. Вместе с `selectStart` - выделить весь текст
+
 #### SmartInput.destroy()
 ```javascript
 smartInput.destroy();
