@@ -162,6 +162,7 @@ function SmartInput(options){
         smartInput.updateValue();
         fixSpaces();
         setTimeout(fixRangeOffset, 0);
+        setLastRange(); // IE, EDGE
     }
 
     function onKeydown(event){
@@ -209,9 +210,7 @@ function SmartInput(options){
     }
 
     function setLastRange(){
-        if (!smartInput.isInRange()) {
-            smartInput.__lastRange = null;
-        }
+        if (!smartInput.isInRange()) return;
         var selection = window.getSelection();
         try {
             smartInput.__lastRange = selection.getRangeAt(0);
@@ -450,7 +449,7 @@ SmartInput.prototype.insert = function insert(text, options) {
             selection.addRange(range);
         }
         if (options.scrollIntoViewIfNeeded) scrollElement(lastElement);
-        editor.updateValue();
+        this.updateValue();
     } catch (ignored){}
     return this;
 };
